@@ -10,7 +10,7 @@ data = pd.read_csv('job_descriptions_cleaned.csv')
 # Define the job recommendation function
 def get_recommendations(job_title, cosine_sim=cosine_sim):
     # Check if the job title exists in the data
-    if job_title not in data['Job Title'].values:
+    if job_title in data['Job Title'].values:
         return pd.DataFrame(columns=['Job Title', 'Company Name', 'Location', 'skills'])
 
     # Get the index of the job that matches the title
