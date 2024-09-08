@@ -34,3 +34,6 @@ if st.button('Recommend Jobs'):
         st.write(recommended_jobs)
     else:
         st.write(recommended_jobs)
+
+if st.checkbox("Show available job titles"):
+    st.write(df['Job Title'].unique())        
