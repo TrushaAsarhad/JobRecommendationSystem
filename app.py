@@ -21,7 +21,7 @@ def recommend_jobs(job_title):
     sim_scores = cosine_similarity(job_desc_vector, tfidf_matrix).flatten()
     sim_scores_idx = sim_scores.argsort()[-10:][::-1]
     similar_jobs = df.iloc[sim_scores_idx]
-    return similar_jobs[['Job Title', 'Company', 'Location']]
+    return similar_jobs[['Job Title', 'Company']]
 
 # Streamlit UI
 st.title('Job Recommendation System')
