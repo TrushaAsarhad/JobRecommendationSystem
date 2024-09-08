@@ -1,50 +1,36 @@
 import streamlit as st
-from joblib import load
 import pandas as pd
+import joblib
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-# Load your models and data
-tfidf = load('tfidf_vectorizer.pkl')
-cosine_sim = load('cosine_similarity.pkl')
-data = pd.read_csv('job_descriptions_cleaned.csv')
+# Load models and data
+tfidf_vectorizer = joblib.load('tfidf_vectorizer.pkl')
+cosine_sim = joblib.load('cosine_similarity.pkl')
+df = pd.read_csv('job_descriptions_cleaned.csv')
 
-# Define the job recommendation function
-def get_recommendations(job_title, cosine_sim=cosine_sim):
-    # Check if the job title exists in the data
-    if job_title in data['Job Title'].values:
-        return pd.DataFrame(columns=['Job Title', 'Company Name', 'Location', 'skills'])
+# Create the TF-IDF matrix from the job descriptions in the DataFrame
+tfidf_matrix = tfidf_vectorizer.transform(df['Job Description'])
 
-    # Get the index of the job that matches the title
-    idx = data[data['Job Title'] == job_title].index[0]
-
-    # Get the pairwise similarity scores of all jobs with the given job
-    sim_scores = list(enumerate(cosine_sim[idx]))
-
-    # Sort the jobs based on similarity scores
-    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
-
-    # Get the indices of the top 10 most similar jobs
-    job_indices = [i[0] for i in sim_scores[1:11]]
-
-    # Return the top 10 most similar jobs
-    return data[['Job Title', 'Company Name', 'Location', 'skills']].iloc[job_indices]
+def recommend_jobs(job_title):
+    if job_title not in df['Job Title'].values:
+        return "Job title not found."
+    idx = df[df['Job Title'] == job_title].index[0]
+    job_description = df.loc[idx, 'Job Description']
+    job_desc_vector = tfidf_vectorizer.transform([job_description])
+    sim_scores = cosine_similarity(job_desc_vector, tfidf_matrix).flatten()
+    sim_scores_idx = sim_scores.argsort()[-10:][::-1]
+    similar_jobs = df.iloc[sim_scores_idx]
+    return similar_jobs[['Job Title', 'Company', 'Location']]
 
 # Streamlit UI
-st.title("Job Recommendation System")
+st.title('Job Recommendation System')
 
-# Input for job title
-job_title = st.text_input("Enter Job Title")
+job_title = st.text_input('Enter Job Title')
 
-# Button to get recommendations
-if st.button("Get Recommendations"):
-    if job_title:
-        recommendations = get_recommendations(job_title)
-        if not recommendations.empty:
-            st.write(recommendations)
-        else:
-            st.write("No recommendations found. Please try another job title.")
+if st.button('Recommend Jobs'):
+    recommended_jobs = recommend_jobs(job_title)
+    if isinstance(recommended_jobs, str):
+        st.write(recommended_jobs)
     else:
-        st.error("Please enter a job title.")
-
-# For debugging: Display available job titles
-if st.checkbox("Show available job titles"):
-    st.write(data['Job Title'].unique())
+        st.write(recommended_jobs)
